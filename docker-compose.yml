@@ -1,0 +1,67 @@
+services:
+  # Main application container
+  sampleproject:
+    build: .
+    container_name: sampleproject
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - FINBUCKLE_TENANT1_CONNECTION_STRING=Server=192.168.x.x;Database=CMS;User=sa;Password=your_password
+      - FINBUCKLE_TENANT2_CONNECTION_STRING=Server=192.168.x.x;Database=CMSss;User=sa;Password=your_password
+      - REDIS_CONNECTION_STRING=redis:6379
+      - CONSUL_HOST=consul:8500
+      - GRAYLOG_HOST=graylog:12201
+      - RABBITMQ_HOST=rabbitmq:5672
+    depends_on:
+      - redis
+      - consul
+      - graylog
+      - rabbitmq
+    networks:
+      - default
+
+  # Redis container
+  redis:
+    image: redis:6.2
+    container_name: redis
+    networks:
+      - default
+
+  # Consul container
+  consul:
+    image: consul:1.10.0
+    container_name: consul
+    command: "consul agent -dev -client=0.0.0.0"
+    ports:
+      - "8500:8500"
+    networks:
+      - default
+
+  # Graylog container
+  graylog:
+    image: graylog/graylog:5.0
+    container_name: graylog
+    environment:
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
+      - GRAYLOG_ROOT_PASSWORD_SHA2=somehashedpassword
+    ports:
+      - "9000:9000"
+      - "12201:12201"
+    networks:
+      - default
+
+  # RabbitMQ container
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
