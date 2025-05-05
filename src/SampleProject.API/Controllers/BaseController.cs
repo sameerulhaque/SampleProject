@@ -19,7 +19,7 @@ using SampleProject.API.Attributes;
 namespace SampleProject.API.Controllers
 {
     [ApiController]
-    [CustomAuthorize]
+    //[CustomAuthorize]
     [ApiVersion("1.0")]
     [Route("/v{version:apiVersion}/[controller]")]
     public class BaseController<TEntity, TRequest> : ControllerBase
@@ -73,7 +73,7 @@ namespace SampleProject.API.Controllers
             var (totalCount, data) = await _cacheService.GetDataAsync(async () =>
             {
                 return await _service.ListAsync(CreateSpecificationFromHeaders(paginationParams));
-            }, typeof(TEntity).FullName ?? "", paginationParamsDict, 300);
+            }, typeof(TEntity).FullName ?? "", paginationParamsDict, 30);
 
             var pagedList = PagedList<TEntity>.Create(paginationParams.PageSize, paginationParams.PageNumber, totalCount, data);
             var result = new APIResponseModel<PagedList<TEntity>>(pagedList);

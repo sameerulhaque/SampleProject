@@ -22,6 +22,7 @@ using SampleProject.Core.Services;
 using SampleProject.Infrastructure.Authentication;
 using SampleProject.Infrastructure.Caching;
 using SampleProject.Infrastructure.Consul;
+using SampleProject.Infrastructure.Dapper;
 using SampleProject.Infrastructure.EF;
 using SampleProject.Infrastructure.Exceptions;
 using SampleProject.Infrastructure.HealthMonitoring;
@@ -116,6 +117,8 @@ public static class BaseDependencyInjection
     public static IServiceCollection RegisterCache(this IServiceCollection services)
     {
         services.AddSingleton<ICacheService, CacheService>();
+        services.AddScoped<DapperQueryBuilder>();
+
         return services;
     }
     public static IServiceCollection Extra(this IServiceCollection services, IConfiguration configuration)

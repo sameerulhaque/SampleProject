@@ -13,6 +13,7 @@ namespace SampleProject.Infrastructure.Dapper
     public interface IDapperDbConnectionFactory
     {
         IDbConnection GetInstance();
+        void Dispose();
     }
 
     public class DapperDbConnectionFactory : IDapperDbConnectionFactory, IDisposable
@@ -29,7 +30,7 @@ namespace SampleProject.Infrastructure.Dapper
 
         public IDbConnection GetInstance()
         {
-            if (_connection.Value == null)
+            if (string.IsNullOrEmpty(_connection.Value?.ConnectionString))
             {
                 _logger.LogInformation("Creating new database connection.");
                 var connection = new SqlConnection(_connectionString);
@@ -41,7 +42,7 @@ namespace SampleProject.Infrastructure.Dapper
 
         public void Dispose()
         {
-            if (_connection.Value != null)
+            if (!string.IsNullOrEmpty(_connection.Value?.ConnectionString))
             {
                 _logger.LogInformation("Disposing database connection.");
                 _connection.Value.Dispose();

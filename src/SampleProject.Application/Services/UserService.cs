@@ -19,6 +19,14 @@ using System.Threading.Tasks;
 
 namespace SampleProject.Application.Services
 {
+    public enum UserStatusEnum
+    {
+        Activated = 1,Deactivated = 2
+    }
+    public class UserWithLastLogin : User
+    {
+        public DateTime? LastAccessed { get; set; }
+    }
     public class UserService : IUserService
     {
         protected readonly IConfiguration configuration;
@@ -33,7 +41,7 @@ namespace SampleProject.Application.Services
         {
 
             var isValidUser = false;
-            isValidUser = await IsValidUserAsync(request, cancellationToken);
+            isValidUser = await IsLoginSuccess(request, cancellationToken);
 
             if (!isValidUser)
             {
@@ -50,10 +58,6 @@ namespace SampleProject.Application.Services
             return result;
         }
 
-        private async Task<bool> IsValidUserAsync(LoginModel request, CancellationToken cancellationToken)
-        {
-            return await _dbContext.Users.AnyAsync(x => x.Email == request.Email && x.PasswordHash == request.Password, cancellationToken);
-        }
 
         private string GenerateToken(string username)
         {
@@ -83,5 +87,58 @@ namespace SampleProject.Application.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+
+        public async Task<bool> ValidateUsers(LoginModel request, CancellationToken cancellationToken)
+        {
+            await _dbContext.Users
+                .IgnoreQueryFilters()
+                .Where(x => x.IsDeleted == true)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            await _dbContext.Users
+                .Where(x => x.StatusId == (int)UserStatusEnum.Deactivated)
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.Role, y => string.Empty),cancellationToken);
+
+
+            return true;
+        }
+        private async Task<bool> IsLoginSuccess(LoginModel request, CancellationToken cancellationToken)
+        {
+            var user = await _dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => 
+                    x.Email == request.Email && x.PasswordHash == request.Password,
+                cancellationToken);
+            if (user != null)
+            {
+                _dbContext.Entry(user).Property("LastAccessed").CurrentValue = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            return false;
+        }
+
+
+        public static readonly Func<VuexyContext, int?, Task<List<UserWithLastLogin>>> _compiledUserAndPermissions =
+            EF.CompileAsyncQuery((VuexyContext context, int? userId) =>
+                context.Users
+                .TagWith("Fetching active users with permissions")
+                .Include(x => x.UserPermissions)
+                .Where(x => userId == null || x.Id == userId)
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Select(user => new UserWithLastLogin
+                {
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    UserPermissions = user.UserPermissions,
+                    LastAccessed = EF.Property<DateTime?>(user, "LastAccessed")
+                })
+                .ToList()
+        );
+
+
     }
 }

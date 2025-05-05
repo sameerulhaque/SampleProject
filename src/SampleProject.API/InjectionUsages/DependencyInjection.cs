@@ -34,13 +34,13 @@ public static class DependencyInjection
         {
             var tenantInfo = serviceProvider.GetRequiredService<ITenantService>();
             options.UseSqlServer(tenantInfo.GetTenant()?.ConnectionString);
+            options.AddInterceptors(new CommandInterceptor());
         });
         services.AddScoped(typeof(ICustomDbContextFactory<>), typeof(CustomDbContextFactory<>));
         services.AddScoped(typeof(ContextManager<>));
         services.AddScoped(typeof(IContextManagerFactory<>), typeof(ContextManagerFactory<>));
 
         services.AddScoped<IDapperDbConnectionFactory, DapperDbConnectionFactory>();
-
         return services;
     }
 

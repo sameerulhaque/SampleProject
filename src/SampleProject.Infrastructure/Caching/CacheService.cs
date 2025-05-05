@@ -119,11 +119,14 @@ namespace SampleProject.Infrastructure.Caching
                     if (cacheType == "redis")
                     {
                         _redisCacheService.SetAsync(cacheKey, result, cacheDuration).GetAwaiter().GetResult();
+                        _redisCacheService.SetAsync(refreshKey, "1", refreshCacheDuration).GetAwaiter().GetResult();
                     }
                     else
                     {
                         _inmemoryCacheService.Set(cacheKey, result, cacheDuration);
+                        _inmemoryCacheService.Set(refreshKey, "1", refreshCacheDuration);
                     }
+                    _refreshFlags[cacheKey] = 0;
                     return result;
                 }
 

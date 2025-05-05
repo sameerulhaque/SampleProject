@@ -451,7 +451,10 @@ public partial class VuexyContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+            entity.Property<DateTime?>("LastAccessed");
         });
+        modelBuilder.Entity<User>().HasQueryFilter(u => u.IsDeleted == false);
+
 
         modelBuilder.Entity<UserPermission>(entity =>
         {
