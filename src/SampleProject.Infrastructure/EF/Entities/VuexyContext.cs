@@ -17,6 +17,10 @@ public partial class VuexyContext : DbContext
 
     public virtual DbSet<AcademyCourse> AcademyCourses { get; set; }
 
+    public virtual DbSet<Animal> Animals { get; set; }
+
+    public virtual DbSet<AssessmentAnswer> AssessmentAnswers { get; set; }
+
     public virtual DbSet<CalendarEvent> CalendarEvents { get; set; }
 
     public virtual DbSet<Cart> Carts { get; set; }
@@ -24,6 +28,8 @@ public partial class VuexyContext : DbContext
     public virtual DbSet<ChatMessage> ChatMessages { get; set; }
 
     public virtual DbSet<ChatRoom> ChatRooms { get; set; }
+
+    public virtual DbSet<Company> Companies { get; set; }
 
     public virtual DbSet<Email> Emails { get; set; }
 
@@ -45,11 +51,31 @@ public partial class VuexyContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<RiskCompanyField> RiskCompanyFields { get; set; }
+
+    public virtual DbSet<RiskCompanyFieldCondition> RiskCompanyFieldConditions { get; set; }
+
+    public virtual DbSet<RiskCompanySection> RiskCompanySections { get; set; }
+
+    public virtual DbSet<RiskConfiguration> RiskConfigurations { get; set; }
+
+    public virtual DbSet<RiskField> RiskFields { get; set; }
+
+    public virtual DbSet<RiskFieldValueMapping> RiskFieldValueMappings { get; set; }
+
+    public virtual DbSet<RiskSection> RiskSections { get; set; }
+
+    public virtual DbSet<RiskUserAssessment> RiskUserAssessments { get; set; }
+
+    public virtual DbSet<RiskUserAssessmentSectionScore> RiskUserAssessmentSectionScores { get; set; }
+
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserBooking> UserBookings { get; set; }
 
     public virtual DbSet<UserPermission> UserPermissions { get; set; }
 
@@ -74,6 +100,49 @@ public partial class VuexyContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<Animal>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Animals__3214EC072F810A64");
+
+            entity.Property(e => e.Age).HasMaxLength(50);
+            entity.Property(e => e.Breed).HasMaxLength(100);
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.PricePerShare).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.RemainingShares).HasComputedColumnSql("([TotalShares]-[BookedShares])", true);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<AssessmentAnswer>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Assessme__3214EC0750653416");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.Assessment).WithMany(p => p.AssessmentAnswers)
+                .HasForeignKey(d => d.AssessmentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Assessmen__Asses__318258D2");
+
+            entity.HasOne(d => d.CompanyField).WithMany(p => p.AssessmentAnswers)
+                .HasForeignKey(d => d.CompanyFieldId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Assessmen__Compa__32767D0B");
         });
 
         modelBuilder.Entity<CalendarEvent>(entity =>
@@ -168,6 +237,20 @@ public partial class VuexyContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<Company>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Companie__3214EC076445D82D");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Email>(entity =>
@@ -387,6 +470,215 @@ public partial class VuexyContext : DbContext
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
         });
 
+        modelBuilder.Entity<RiskCompanyField>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskCate__19093A2B1A0B6CE8");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.CompanySection).WithMany(p => p.RiskCompanyFields)
+                .HasForeignKey(d => d.CompanySectionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskCompa__Compa__13F1F5EB");
+
+            entity.HasOne(d => d.Field).WithMany(p => p.RiskCompanyFields)
+                .HasForeignKey(d => d.FieldId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskCompa__Field__19AACF41");
+        });
+
+        modelBuilder.Entity<RiskCompanyFieldCondition>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskComp__3214EC07B222493A");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.Operator).HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+            entity.Property(e => e.Value).HasMaxLength(255);
+            entity.Property(e => e.ValueTo).HasMaxLength(255);
+
+            entity.HasOne(d => d.CompanyField).WithMany(p => p.RiskCompanyFieldConditions)
+                .HasForeignKey(d => d.CompanyFieldId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskCompa__Compa__1D7B6025");
+
+            entity.HasOne(d => d.FieldValueMapping).WithMany(p => p.RiskCompanyFieldConditions)
+                .HasForeignKey(d => d.FieldValueMappingId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskCompa__Field__1E6F845E");
+        });
+
+        modelBuilder.Entity<RiskCompanySection>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskSect__80EF08925BF15B42");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+            entity.Property(e => e.Weightage).HasColumnType("decimal(5, 2)");
+
+            entity.HasOne(d => d.Company).WithMany(p => p.RiskCompanySections)
+                .HasForeignKey(d => d.CompanyId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskCompa__Compa__0697FACD");
+
+            entity.HasOne(d => d.Section).WithMany(p => p.RiskCompanySections)
+                .HasForeignKey(d => d.SectionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskCompa__Secti__0B5CAFEA");
+        });
+
+        modelBuilder.Entity<RiskConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskConf__3214EC07B9C364DD");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+            entity.Property(e => e.Version).HasMaxLength(50);
+
+            entity.HasOne(d => d.Company).WithMany(p => p.RiskConfigurations)
+                .HasForeignKey(d => d.CompanyId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskUserA__Compa__2704CA5F");
+        });
+
+        modelBuilder.Entity<RiskField>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskCate__7B30E783D1561894");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.EndpointURL).HasMaxLength(200);
+            entity.Property(e => e.FieldType_)
+                .HasMaxLength(50)
+                .HasColumnName("FieldType ");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.IsRequired_).HasColumnName("IsRequired ");
+            entity.Property(e => e.Label).HasMaxLength(255);
+            entity.Property(e => e.OrderIndex_).HasColumnName("OrderIndex ");
+            entity.Property(e => e.Placeholder_)
+                .HasMaxLength(255)
+                .HasColumnName("Placeholder ");
+            entity.Property(e => e.SectionId).HasDefaultValue(1);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.Section).WithMany(p => p.RiskFields)
+                .HasForeignKey(d => d.SectionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskField__Secti__09746778");
+        });
+
+        modelBuilder.Entity<RiskFieldValueMapping>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskCate__19093A2B36A2E660");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.FieldId).HasDefaultValue(1);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.Text).HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+            entity.Property(e => e.Value).HasMaxLength(50);
+
+            entity.HasOne(d => d.Field).WithMany(p => p.RiskFieldValueMappings)
+                .HasForeignKey(d => d.FieldId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskField__Field__3CF40B7E");
+        });
+
+        modelBuilder.Entity<RiskSection>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskSect__6757C66FB54E8380");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.SectionName).HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<RiskUserAssessment>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskUser__3214EC0732143811");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.Status).HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.RiskConfiguration).WithMany(p => p.RiskUserAssessments)
+                .HasForeignKey(d => d.RiskConfigurationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskUserA__RiskC__2610A626");
+
+            entity.HasOne(d => d.User).WithMany(p => p.RiskUserAssessments)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskUserA__UserI__251C81ED");
+        });
+
+        modelBuilder.Entity<RiskUserAssessmentSectionScore>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RiskUser__3214EC07647FFC6F");
+
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.Assessment).WithMany(p => p.RiskUserAssessmentSectionScores)
+                .HasForeignKey(d => d.AssessmentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskUserA__Asses__2CBDA3B5");
+
+            entity.HasOne(d => d.CompanySection).WithMany(p => p.RiskUserAssessmentSectionScores)
+                .HasForeignKey(d => d.CompanySectionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__RiskUserA__Compa__2DB1C7EE");
+        });
+
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Roles__3214EC076BCAB003");
@@ -436,6 +728,7 @@ public partial class VuexyContext : DbContext
 
             entity.HasIndex(e => e.Email, "UQ__Users__A9D10534106D08CB").IsUnique();
 
+            entity.Property(e => e.Address).HasMaxLength(500);
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
@@ -445,16 +738,40 @@ public partial class VuexyContext : DbContext
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.FullName).HasMaxLength(255);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            entity.Property(e => e.LastAccessed).HasColumnType("datetime");
             entity.Property(e => e.PasswordHash).HasMaxLength(255);
+            entity.Property(e => e.Phone).HasMaxLength(50);
             entity.Property(e => e.Role).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
-            entity.Property<DateTime?>("LastAccessed");
         });
-        modelBuilder.Entity<User>().HasQueryFilter(u => u.IsDeleted == false);
 
+        modelBuilder.Entity<UserBooking>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__UserBook__3214EC075E94AE46");
+
+            entity.Property(e => e.AnimalName).HasMaxLength(100);
+            entity.Property(e => e.BookingDate).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeletedAt).HasColumnType("datetime");
+            entity.Property(e => e.DeletedBy).HasMaxLength(100);
+            entity.Property(e => e.Status).HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.Animal).WithMany(p => p.UserBookings)
+                .HasForeignKey(d => d.AnimalId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__UserBooki__Anima__531856C7");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserBookings)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__UserBooki__UserI__5224328E");
+        });
 
         modelBuilder.Entity<UserPermission>(entity =>
         {

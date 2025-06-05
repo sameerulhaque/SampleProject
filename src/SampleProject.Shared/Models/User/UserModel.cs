@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SampleProject.Shared.Models.User
 {
-    public class UserModel
+    public class UserRequestModel
     {
         public string FullName { get; set; } = null!;
 
@@ -15,5 +15,6 @@ namespace SampleProject.Shared.Models.User
         public string PasswordHash { get; set; } = null!;
 
         public string Role { get; set; } = null!;
+        public string Phone { get; set; } = null!;
     }
 }

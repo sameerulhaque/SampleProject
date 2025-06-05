@@ -2,7 +2,6 @@
 
 public abstract class TrackableEntity : Entity
 {
-    public int? StatusId { get; private set; }
     public DateTime? CreatedAt { get; private set; }
     public string? CreatedBy { get; private set; } = string.Empty;
     public DateTime? UpdatedAt { get; private set; }

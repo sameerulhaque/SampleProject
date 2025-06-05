@@ -9,7 +9,7 @@ namespace SampleProject.API.Middleware;
 public class RateLimitMiddleware(RequestDelegate next, IMemoryCache memoryCache)
 {
     private readonly TimeSpan timeLimit = TimeSpan.FromMinutes(1);
-    private readonly int countLimit = 10;
+    private readonly int countLimit = 100;
 
     public async Task Invoke(HttpContext context)
     {

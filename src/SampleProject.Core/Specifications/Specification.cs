@@ -1,4 +1,7 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using System.Reflection;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 public class ConcreteSpecification<TEntity> : Specification<TEntity>
 {
@@ -26,12 +29,32 @@ public abstract class Specification<TEntity>
 
             var parameter = Expression.Parameter(typeof(TEntity), "x");
             var property = Expression.Property(parameter, searchKey);
+            var propertyType = property.Type;
 
-            var value = Expression.Constant(searchValue);
-            var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+            object typedValue;
+            try
+            {
+                typedValue = Convert.ChangeType(searchValue, Nullable.GetUnderlyingType(propertyType) ?? propertyType);
+            }
+            catch
+            {
+                continue; // Skip this condition if conversion fails
+            }
 
-            var containsExpression = Expression.Call(property, containsMethod, value);
-            var lambda = Expression.Lambda<Func<TEntity, bool>>(containsExpression, parameter);
+            var constant = Expression.Constant(typedValue, propertyType);
+            Expression predicate;
+
+            if (propertyType == typeof(string))
+            {
+                var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+                predicate = Expression.Call(property, containsMethod!, constant);
+            }
+            else
+            {
+                predicate = Expression.Equal(property, constant);
+            }
+
+            var lambda = Expression.Lambda<Func<TEntity, bool>>(predicate, parameter);
 
             if (Criteria == null)
             {
@@ -39,17 +62,24 @@ public abstract class Specification<TEntity>
             }
             else
             {
-                var combinedExpression = Expression.AndAlso(Criteria.Body, lambda.Body);
-                Criteria = Expression.Lambda<Func<TEntity, bool>>(combinedExpression, parameter);
+                // Replace parameter in existing criteria
+                var parameterReplacer = new ParameterReplacer(lambda.Parameters[0], Criteria.Parameters[0]);
+                var updatedBody = parameterReplacer.Visit(lambda.Body);
+                var combined = Expression.AndAlso(Criteria.Body, updatedBody);
+                Criteria = Expression.Lambda<Func<TEntity, bool>>(combined, Criteria.Parameters[0]);
             }
         }
     }
 
+
     public void AddPaging(int pageSize, int pageNumber)
     {
-        Skip = (pageNumber - 1) * pageSize;
-        Take = pageSize;
-        IsPagingEnabled = true;
+        if (pageSize > 0)
+        {
+            Skip = (pageNumber - 1) * pageSize;
+            Take = pageSize;
+            IsPagingEnabled = true;
+        }
     }
 
     public void AddOrderBy(Expression<Func<TEntity, object>> orderExpression, OrderType orderType)
@@ -75,19 +105,73 @@ public abstract class Specification<TEntity>
             ThenOrderByExpression = orderExpression;
         }
     }
+    public void AddIncludes(List<string> includes)
+    {
+        var seenPaths = new HashSet<string>();
+
+        foreach (var include in includes)
+        {
+            if (seenPaths.Contains(include))
+                continue;
+
+            if (include.Split('.').Distinct().Count() != include.Split('.').Length)
+                continue; // skip obviously recursive chains like User.User.User
+
+            var parameter = Expression.Parameter(typeof(TEntity), "x");
+            Expression body = parameter;
+
+            foreach (var member in include.Split('.'))
+            {
+                body = Expression.PropertyOrField(body, member);
+            }
+
+            var lambda = CreateLambda(body, parameter);
+            AddInclude(lambda);
+
+            seenPaths.Add(include);
+        }
+    }
+
+
+    private static Expression<Func<TEntity, object>> CreateLambda(Expression body, ParameterExpression parameter)
+{
+    // If the body is a value type, box it to object
+    if (body.Type.IsValueType)
+    {
+        body = Expression.Convert(body, typeof(object));
+    }
+
+    return Expression.Lambda<Func<TEntity, object>>(body, parameter);
+}
+
 
     public void AddInclude(Expression<Func<TEntity, object>> includeExpression)
     {
         IncludeExpressions.Add(includeExpression);
     }
 
-    public void AddInclude(string includeString)
-    {
-        IncludeStrings.Add(includeString);
-    }
+    //public void AddInclude(string includeString)
+    //{
+    //    IncludeStrings.Add(includeString);
+    //}
 }
 
+public class ParameterReplacer : ExpressionVisitor
+{
+    private readonly ParameterExpression _oldParameter;
+    private readonly ParameterExpression _newParameter;
 
+    public ParameterReplacer(ParameterExpression oldParameter, ParameterExpression newParameter)
+    {
+        _oldParameter = oldParameter;
+        _newParameter = newParameter;
+    }
+
+    protected override Expression VisitParameter(ParameterExpression node)
+    {
+        return node == _oldParameter ? _newParameter : base.VisitParameter(node);
+    }
+}
 public enum OrderType
 {
     Ascending,

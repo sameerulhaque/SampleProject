@@ -6,6 +6,7 @@ using SampleProject.Infrastructure.EF.Models;
 using SampleProject.Core.Interfaces;
 using System.Reflection;
 using SampleProject.Infrastructure.EF.Entities;
+using SampleProject.Infrastructure.Caching;
 
 namespace SampleProject.Core.Services;
 
@@ -14,17 +15,22 @@ public class WriteRepository<TEntity> : IWriteRepository<TEntity>
 {
     private readonly VuexyContext _dbContext;
     private readonly IMapper _mapper;
+    protected readonly ICacheService _cacheService;
 
-    public WriteRepository(VuexyContext dbContext, IMapper mapper)
+
+    public WriteRepository(VuexyContext dbContext, IMapper mapper, ICacheService cacheService)
     {
         _dbContext = dbContext;
         _mapper = mapper;
+        _cacheService = cacheService;
     }
 
     // Add a new entity
     public async Task<TEntity> AddAsync<TEntityRequest>(TEntityRequest request)
         where TEntityRequest : class
     {
+        var cacheKey = typeof(TEntity).FullName ?? "";
+
         var entity = _mapper.Map<TEntity>(request);
         if (entity is TrackableEntity trackableEntity)
         {
@@ -32,6 +38,8 @@ public class WriteRepository<TEntity> : IWriteRepository<TEntity>
         }
         await _dbContext.Set<TEntity>().AddAsync(entity);
         await _dbContext.SaveChangesAsync();
+
+        _cacheService.RemoveByCondition(key => key.Contains(cacheKey));
         return entity;
     }
 
@@ -39,6 +47,8 @@ public class WriteRepository<TEntity> : IWriteRepository<TEntity>
     public async Task<TEntity> UpdateAsync<TEntityRequest>(int id, TEntityRequest request, bool isPartialUpdate = false)
         where TEntityRequest : class
     {
+        var cacheKey = typeof(TEntity).FullName ?? "";
+
         var entity = await _dbContext.Set<TEntity>().FirstOrDefaultAsync(x => x.Id == id && x.IsDeleted != true);
         if (entity == null) throw new KeyNotFoundException($"Entity with ID {id} not found.");
         _dbContext.Entry(entity).State = EntityState.Detached;
@@ -58,6 +68,8 @@ public class WriteRepository<TEntity> : IWriteRepository<TEntity>
 
         _dbContext.Set<TEntity>().Update(entity);
         await _dbContext.SaveChangesAsync();
+
+        _cacheService.RemoveByCondition(key => key.Contains(cacheKey));
         return entity;
     }
 
@@ -98,6 +110,7 @@ public class WriteRepository<TEntity> : IWriteRepository<TEntity>
 
     public async Task SoftDeleteAsync(int id)
     {
+        var cacheKey = typeof(TEntity).FullName ?? "";
         var entity = await _dbContext.Set<TEntity>().FindAsync(id);
         if (entity == null)
         {
@@ -109,5 +122,6 @@ public class WriteRepository<TEntity> : IWriteRepository<TEntity>
         }
         _dbContext.Set<TEntity>().Update(entity);
         await _dbContext.SaveChangesAsync();
+        _cacheService.RemoveByCondition(key => key.Contains(cacheKey));
     }
 }

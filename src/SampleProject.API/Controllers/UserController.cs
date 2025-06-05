@@ -15,7 +15,7 @@ namespace SampleProject.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : BaseController<User, UserModel>
+    public class UserController : BaseController<User, UserRequestModel, User>
     {
         private readonly IUserService _userService;
         private readonly IDapperDbConnectionFactory _dbConnectionFactory;
@@ -37,36 +37,22 @@ namespace SampleProject.API.Controllers
             return ApiResult(res);
         }
 
-
-        [HttpGet("dapper-test")]
-        public async Task<IActionResult> DapperTest(CancellationToken cancellationToken)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestModel entity, CancellationToken cancellationToken)
         {
-            var request = new DataListerRequest
-            {
-                PageNumber = 1,
-                PageSize = 10,
-                Sort = "Users.CreatedAt DESC",
-                PageId = 209,
-                idColumn = "Id",
-                Filters = new List<PageFilterModel>
-                    {
-                        new PageFilterModel
-                        {
-                            Field = "StatusId",
-                            Operator = "equals",
-                            Value = "1",
-                            Operation = "AND",
-                            ExternalSearch = true,
-                            TryConvertType = "bool",
-                            FixedFilter = true
-                        }
-                    }
-                };
+            if (entity == null)
+                throw new BadRequestException("Request Error", new Dictionary<string, string[]>());
 
-
-            return Ok(_queryBuilder.GetPageLister(request));
+            var res = await _userService.RegisterUser(entity, cancellationToken);
+            return ApiResult(res);
         }
 
 
+        [HttpGet("user-bookings")]
+        public async Task<IActionResult> GetBookingUsers(int? animalId, int? userId, CancellationToken cancellationToken)
+        {
+            var res = await _userService.GetBookingUsers(animalId ?? 0, userId ?? 0, cancellationToken);
+            return ApiResult(res);
+        }
     }
 }

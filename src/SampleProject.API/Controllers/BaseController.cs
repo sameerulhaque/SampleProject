@@ -22,7 +22,7 @@ namespace SampleProject.API.Controllers
     //[CustomAuthorize]
     [ApiVersion("1.0")]
     [Route("/v{version:apiVersion}/[controller]")]
-    public class BaseController<TEntity, TRequest> : ControllerBase
+    public class BaseController<TEntity, TRequest, TResponse> : ControllerBase
     where TEntity : Entity
     where TRequest : class, new()
     {
@@ -32,17 +32,19 @@ namespace SampleProject.API.Controllers
         protected readonly IWebHostEnvironment _webHostEnvironment;
         protected readonly ICacheService _cacheService;
         protected readonly string DP_PATH, CUST_DOCS_PATH, ENCRYPT_KEY;
+        protected readonly int _cacheTime;
         protected BaseController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment, IReadOnlyRepository<TEntity> service, 
-            IWriteRepository<TEntity> writeService, ICacheService cacheService)
+            IWriteRepository<TEntity> writeService, ICacheService cacheService, int cacheTime = 300)
         {
             this.configuration = configuration;
-            CUST_DOCS_PATH = configuration.GetValue<string>("custdocs") ?? "";
-            DP_PATH = configuration.GetValue<string>("DPPath") ?? "";
-            ENCRYPT_KEY = configuration.GetValue<string>("EncryptKey") ?? "";
+            CUST_DOCS_PATH = configuration.GetValue<string>("Settings:custdocs") ?? "";
+            DP_PATH = configuration.GetValue<string>("Settings:DPPath") ?? "";
+            ENCRYPT_KEY = configuration.GetValue<string>("Settings:EncryptKey") ?? "";
             _service = service;
             _webHostEnvironment = webHostEnvironment;
             _writeService = writeService;
             _cacheService = cacheService;
+            _cacheTime = cacheTime;
         }
 
         protected IActionResult ApiResult(APIResponseModel result)
@@ -72,11 +74,11 @@ namespace SampleProject.API.Controllers
 
             var (totalCount, data) = await _cacheService.GetDataAsync(async () =>
             {
-                return await _service.ListAsync(CreateSpecificationFromHeaders(paginationParams));
-            }, typeof(TEntity).FullName ?? "", paginationParamsDict, 30);
+                return await _service.ListAsync<TResponse>(CreateSpecificationFromHeaders(paginationParams));
+            }, typeof(TEntity).FullName ?? "", paginationParamsDict, _cacheTime, "inmemory", _cacheTime * 4);
 
-            var pagedList = PagedList<TEntity>.Create(paginationParams.PageSize, paginationParams.PageNumber, totalCount, data);
-            var result = new APIResponseModel<PagedList<TEntity>>(pagedList);
+            var pagedList = PagedList<TResponse>.Create(paginationParams.PageSize, paginationParams.PageNumber, totalCount, data);
+            var result = new APIResponseModel<PagedList<TResponse>>(pagedList);
             result.OK();
             return ApiResult(result);
         }
@@ -153,18 +155,10 @@ namespace SampleProject.API.Controllers
             {
                 paginationParams.PageNumber = pageNumber;
             }
-            else
-            {
-                paginationParams.PageNumber = 1;  // Default value
-            }
 
             if (_request.Headers.ContainsKey("X-Page-Size") && int.TryParse(_request.Headers["X-Page-Size"].ToString(), out int pageSize))
             {
                 paginationParams.PageSize = pageSize;
-            }
-            else
-            {
-                paginationParams.PageSize = 10;  // Default value
             }
 
             // Extract sorting information
@@ -183,6 +177,21 @@ namespace SampleProject.API.Controllers
                 catch (JsonException)
                 {
                     paginationParams.SearchQuery = new Dictionary<string, string>();  // Default to empty if JSON is invalid
+                }
+            }
+
+            if (_request.Headers.ContainsKey("X-Search-Query"))
+            {
+                try
+                {
+                    var includeQuery = JsonConvert.DeserializeObject<List<string>>(_request.Headers["X-Include-Query"].ToString())
+                                      ?? new List<string>();
+                    paginationParams.IncludeQuery = includeQuery;
+
+                }
+                catch (JsonException)
+                {
+                    paginationParams.IncludeQuery = new List<string>();
                 }
             }
 
@@ -220,7 +229,21 @@ namespace SampleProject.API.Controllers
             {
                 specification.AddSearchCriteria(paginationParams.SearchQuery);
             }
+            if (paginationParams.IncludeQuery != null && paginationParams.IncludeQuery.Count > 0)
+            {
+                specification.AddIncludes(paginationParams.IncludeQuery);
+            }
             return specification;
+        }
+
+        [NonAction]
+        public (string, string) GetCustomerDocsFileAndPathName(string fileName)
+        {
+            var dotSplit = fileName.Split(".");
+            if (dotSplit.Length <= 1) throw new Exception("File does not have a extension");
+            var extension = dotSplit.Last();
+            var saveFileName = Path.GetRandomFileName() + "." + extension;
+            return (CUST_DOCS_PATH + "/" + saveFileName, Path.Combine(_webHostEnvironment.WebRootPath ?? "", CUST_DOCS_PATH, saveFileName));
         }
     }
 }

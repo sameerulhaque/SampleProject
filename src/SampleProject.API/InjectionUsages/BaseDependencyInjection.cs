@@ -49,7 +49,7 @@ public static class BaseDependencyInjection
             .RegisterTenant()
             .Extra(configuration)
             .RegisterMemoryCache()
-            .RegisterRedis(configuration)
+            //.RegisterRedis(configuration)
             .RegisterCache()
             .RegisterAuthentication(configuration)
             .RegisterCurrentUser()
@@ -295,6 +295,7 @@ public static class BaseDependencyInjection
         services.AddScoped(typeof(IReadOnlyRepository<>), typeof(ReadOnlyRepository<>));
         services.AddScoped(typeof(IWriteRepository<>), typeof(WriteRepository<>));
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IKYCService, KYCService>();
         return services;
     }
 

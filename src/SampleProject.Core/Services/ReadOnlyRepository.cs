@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Azure.Core;
+using Microsoft.EntityFrameworkCore;
 using SampleProject.Core.Interfaces;
 using SampleProject.Infrastructure.EF.Entities;
 using SampleProject.Infrastructure.EF.Models;
@@ -10,10 +12,12 @@ public class ReadOnlyRepository<TEntity> : IReadOnlyRepository<TEntity>
     where TEntity : Entity
 {
     private readonly VuexyContext _dbContext;
+    private readonly IMapper _mapper;
 
-    public ReadOnlyRepository(VuexyContext dbContext)
+    public ReadOnlyRepository(VuexyContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
+        _mapper = mapper;
     }
 
     public async Task<TEntity?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -36,13 +40,20 @@ public class ReadOnlyRepository<TEntity> : IReadOnlyRepository<TEntity>
         return await query.FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<(int TotalCount, IReadOnlyList<TEntity> Data)> ListAsync(Specification<TEntity> specification, CancellationToken cancellationToken = default)
+    public async Task<(int TotalCount, IReadOnlyList<TResponse> Data)> ListAsync<TResponse>(Specification<TEntity> specification, CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Set<TEntity>().AsNoTracking().Where(x => x.IsDeleted != true).AsQueryable();
 
         if (specification.Criteria != null)
         {
             query = query.Where(specification.Criteria);
+        }
+        if (specification.IncludeExpressions != null)
+        {
+            foreach (var expression in specification.IncludeExpressions)
+            {
+                query = query.Include(expression);
+            }
         }
 
         var fallbackData = new List<TEntity>();
@@ -71,6 +82,7 @@ public class ReadOnlyRepository<TEntity> : IReadOnlyRepository<TEntity>
         fallbackValue: new List<TEntity>(),
         cancellationToken);
 
-        return (totalCount, data);
+        var res = _mapper.Map<List<TResponse>>(data);
+        return (totalCount, res);
     }
 }

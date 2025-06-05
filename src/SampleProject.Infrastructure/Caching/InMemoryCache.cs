@@ -52,11 +52,11 @@ namespace SampleProject.Infrastructure.Caching
         }
         public void Remove(string cacheKey, bool isPrefix = false)
         {
-            cacheKey = _tenantService.GetTenantKey(cacheKey);
             if (!isPrefix)
             {
                 if (KeyExists(cacheKey))
                 {
+                    cacheKey = _tenantService.GetTenantKey(cacheKey);
                     MemoryCache.Default.Remove(cacheKey);
                 }
             }
